@@ -1,5 +1,7 @@
 # 2026-ruangkita-backend
 
+ini bagian backend
+
 ## 🛠️ Teknologi
 - **Framework:** .NET 10.0 (ASP.NET Core Web API)
 - **Language:** C#
