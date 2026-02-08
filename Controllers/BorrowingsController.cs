@@ -60,6 +60,35 @@ public class BorrowingsController : ControllerBase
         return NoContent();
     }
 
+        // PATCH: api/borrowings/5/status
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
+    {
+        var borrowing = await _context.Borrowings.FindAsync(id);
+
+        if (borrowing == null) return NotFound();
+
+        var allowedStatuses = new[] { "Approved", "Rejected", "Pending" };
+        if (!allowedStatuses.Contains(statusDto.Status))
+        {
+            return BadRequest("Status tidak valid.");
+        }
+
+        borrowing.Status = statusDto.Status;
+        await _context.SaveChangesAsync();
+
+        var updatedData = await _context.Borrowings
+            .Include(b => b.Room)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        return Ok(new { message = "Status updated successfully", data = updatedData });
+    }
+
+    public class StatusUpdateDto
+    {
+        public string Status { get; set; } = string.Empty;
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBorrowing(int id)
     {
