@@ -34,4 +34,25 @@ public class RoomsController : ControllerBase
 
         return room;
     }
+
+    [HttpPost]
+    public async Task<ActionResult<Room>> PostRoom(Room room)
+    {
+        if (string.IsNullOrEmpty(room.Name))
+        {
+            return BadRequest(new { message = "Nama ruangan wajib diisi!" });
+        }
+
+        if (room.Capacity <= 0)
+        {
+            return BadRequest(new { message = "Kapasitas harus lebih dari 0!" });
+        }
+
+        _context.Rooms.Add(room);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetRoom), new { id = room.Id }, room);
+    }
+
+
 }
