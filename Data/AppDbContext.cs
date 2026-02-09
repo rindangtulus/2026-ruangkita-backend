@@ -9,6 +9,8 @@ public class AppDbContext : DbContext
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Borrowing> Borrowings { get; set; }
 
+    public DbSet<StatusHistory> StatusHistories { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Room>().HasData(

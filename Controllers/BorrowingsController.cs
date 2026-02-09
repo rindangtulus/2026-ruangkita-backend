@@ -61,28 +61,34 @@ public class BorrowingsController : ControllerBase
     }
 
         // PATCH: api/borrowings/5/status
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
+   [HttpPatch("{id}/status")]
+public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
+{
+    var borrowing = await _context.Borrowings.FindAsync(id);
+    if (borrowing == null) return NotFound();
+
+    // Simpan riwayat perubahan
+    var history = new StatusHistory
     {
-        var borrowing = await _context.Borrowings.FindAsync(id);
+        BorrowingId = id,
+        Status = statusDto.Status,
+        ChangedAt = DateTime.Now
+    };
+    _context.StatusHistories.Add(history);
 
-        if (borrowing == null) return NotFound();
+    // Update status utama
+    borrowing.Status = statusDto.Status;
+    
+    await _context.SaveChangesAsync();
 
-        var allowedStatuses = new[] { "Approved", "Rejected", "Pending" };
-        if (!allowedStatuses.Contains(statusDto.Status))
-        {
-            return BadRequest("Status tidak valid.");
-        }
+    // Return data lengkap dengan riwayatnya
+    var result = await _context.Borrowings
+        .Include(b => b.Room)
+        .Include(b => b.StatusHistories)
+        .FirstOrDefaultAsync(b => b.Id == id);
 
-        borrowing.Status = statusDto.Status;
-        await _context.SaveChangesAsync();
-
-        var updatedData = await _context.Borrowings
-            .Include(b => b.Room)
-            .FirstOrDefaultAsync(b => b.Id == id);
-
-        return Ok(new { message = "Status updated successfully", data = updatedData });
-    }
+    return Ok(result);
+}
 
     public class StatusUpdateDto
     {

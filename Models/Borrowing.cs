@@ -24,4 +24,6 @@ public class Borrowing
     public string Status { get; set; } = "Pending";
 
     public Room? Room { get; set; }
+
+    public List<StatusHistory> StatusHistories { get; set; } = new();
 }
