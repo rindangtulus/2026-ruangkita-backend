@@ -17,9 +17,32 @@ public class BorrowingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Borrowing>>> GetBorrowings()
+    public async Task<ActionResult<IEnumerable<Borrowing>>> GetBorrowings(
+        [FromQuery] string? status, 
+        [FromQuery] string? search)
     {
-        return await _context.Borrowings.Include(b => b.Room).ToListAsync();
+        var query = _context.Borrowings
+            .Include(b => b.Room)
+            .Include(b => b.StatusHistories)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = query.Where(b => b.Status == status);
+        }
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            var searchTerm = search.ToLower().Trim();
+            
+            query = query.Where(b =>
+                b.BorrowerName.ToLower().Contains(searchTerm) ||
+                b.Purpose.ToLower().Contains(searchTerm));
+        }
+
+        query = query.OrderByDescending(b => b.BorrowDate);
+
+        return await query.ToListAsync();
     }
 
     [HttpPost]
@@ -60,35 +83,32 @@ public class BorrowingsController : ControllerBase
         return NoContent();
     }
 
-        // PATCH: api/borrowings/5/status
-   [HttpPatch("{id}/status")]
-public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
-{
-    var borrowing = await _context.Borrowings.FindAsync(id);
-    if (borrowing == null) return NotFound();
-
-    // Simpan riwayat perubahan
-    var history = new StatusHistory
+            // PATCH: api/borrowings/5/status
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
     {
-        BorrowingId = id,
-        Status = statusDto.Status,
-        ChangedAt = DateTime.Now
-    };
-    _context.StatusHistories.Add(history);
+        var borrowing = await _context.Borrowings.FindAsync(id);
+        if (borrowing == null) return NotFound();
 
-    // Update status utama
-    borrowing.Status = statusDto.Status;
-    
-    await _context.SaveChangesAsync();
+        var history = new StatusHistory
+        {
+            BorrowingId = id,
+            Status = statusDto.Status,
+            ChangedAt = DateTime.Now
+        };
+        _context.StatusHistories.Add(history);
 
-    // Return data lengkap dengan riwayatnya
-    var result = await _context.Borrowings
-        .Include(b => b.Room)
-        .Include(b => b.StatusHistories)
-        .FirstOrDefaultAsync(b => b.Id == id);
+        borrowing.Status = statusDto.Status;
+        
+        await _context.SaveChangesAsync();
 
-    return Ok(result);
-}
+        var result = await _context.Borrowings
+            .Include(b => b.Room)
+            .Include(b => b.StatusHistories)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        return Ok(result);
+    }
 
     public class StatusUpdateDto
     {
