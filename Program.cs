@@ -12,7 +12,22 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin() // Mengizinkan dari alamat mana saja (cocok untuk tahap belajar)
+                  .AllowAnyMethod() // Mengizinkan GET, POST, PUT, DELETE, PATCH
+                  .AllowAnyHeader(); // Mengizinkan header apa saja
+        });
+});
+
 var app = builder.Build();
+
+app.UseCors("AllowAll");
+
+app.UseAuthorization();
 
 app.MapControllers();
 
