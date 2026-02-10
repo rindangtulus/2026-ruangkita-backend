@@ -34,35 +34,48 @@ public class BorrowingsController : ControllerBase
         if (!string.IsNullOrEmpty(search))
         {
             var searchTerm = search.ToLower().Trim();
-            
             query = query.Where(b =>
                 b.BorrowerName.ToLower().Contains(searchTerm) ||
                 b.Purpose.ToLower().Contains(searchTerm));
         }
 
-        query = query.OrderByDescending(b => b.BorrowDate);
-
-        return await query.ToListAsync();
+        return await query.OrderByDescending(b => b.BorrowDate).ToListAsync();
     }
 
     [HttpPost]
     public async Task<ActionResult<Borrowing>> PostBorrowing(Borrowing borrowing)
     {
+        // Set status default
         borrowing.Status = "Pending";
+        
+        // Penting: Putuskan relasi objek agar tidak terjadi error relasi database
+        borrowing.Room = null; 
         
         _context.Borrowings.Add(borrowing);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetBorrowings), new { id = borrowing.Id }, borrowing);
+        // OTOMATIS: Buat history awal agar detail history di Frontend langsung ada isinya
+        var history = new StatusHistory
+        {
+            BorrowingId = borrowing.Id,
+            Status = "Pending",
+            ChangedAt = DateTime.Now
+        };
+        _context.StatusHistories.Add(history);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetBorrowing), new { id = borrowing.Id }, borrowing);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Borrowing>> GetBorrowing(int id)
     {
-        var borrowing = await _context.Borrowings.Include(b => b.Room).FirstOrDefaultAsync(b => b.Id == id);
+        var borrowing = await _context.Borrowings
+            .Include(b => b.Room)
+            .Include(b => b.StatusHistories)
+            .FirstOrDefaultAsync(b => b.Id == id);
 
         if (borrowing == null) return NotFound();
-
         return borrowing;
     }
 
@@ -71,6 +84,7 @@ public class BorrowingsController : ControllerBase
     {
         if (id != borrowing.Id) return BadRequest();
 
+        borrowing.Room = null; // Mencegah update objek Room yang tidak sengaja
         _context.Entry(borrowing).State = EntityState.Modified;
 
         try {
@@ -83,13 +97,13 @@ public class BorrowingsController : ControllerBase
         return NoContent();
     }
 
-            // PATCH: api/borrowings/5/status
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
     {
         var borrowing = await _context.Borrowings.FindAsync(id);
         if (borrowing == null) return NotFound();
 
+        // Catat ke history
         var history = new StatusHistory
         {
             BorrowingId = id,
@@ -99,9 +113,9 @@ public class BorrowingsController : ControllerBase
         _context.StatusHistories.Add(history);
 
         borrowing.Status = statusDto.Status;
-        
         await _context.SaveChangesAsync();
 
+        // Return data lengkap beserta history barunya
         var result = await _context.Borrowings
             .Include(b => b.Room)
             .Include(b => b.StatusHistories)
@@ -110,10 +124,7 @@ public class BorrowingsController : ControllerBase
         return Ok(result);
     }
 
-    public class StatusUpdateDto
-    {
-        public string Status { get; set; } = string.Empty;
-    }
+    public class StatusUpdateDto { public string Status { get; set; } = string.Empty; }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBorrowing(int id)

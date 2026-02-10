@@ -5,6 +5,8 @@ namespace _2026_ruangkita_backend.Models;
 public class StatusHistory
 {
     public int Id { get; set; }
+    
+    [Required]
     public int BorrowingId { get; set; }
     
     [Required]
@@ -13,6 +15,4 @@ public class StatusHistory
     public DateTime ChangedAt { get; set; } = DateTime.Now;
 
     public Borrowing? Borrowing { get; set; }
-
-    public List<StatusHistory> StatusHistories { get; set; } = new();
 }

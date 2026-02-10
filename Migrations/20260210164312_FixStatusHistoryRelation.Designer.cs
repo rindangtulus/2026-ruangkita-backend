@@ -11,8 +11,8 @@ using _2026_ruangkita_backend.Data;
 namespace _2026_ruangkita_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260209102304_AddStatusHistoryTable")]
-    partial class AddStatusHistoryTable
+    [Migration("20260210164312_FixStatusHistoryRelation")]
+    partial class FixStatusHistoryRelation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -109,14 +109,9 @@ namespace _2026_ruangkita_backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("StatusHistoryId")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BorrowingId");
-
-                    b.HasIndex("StatusHistoryId");
 
                     b.ToTable("StatusHistories");
                 });
@@ -140,19 +135,10 @@ namespace _2026_ruangkita_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("_2026_ruangkita_backend.Models.StatusHistory", null)
-                        .WithMany("StatusHistories")
-                        .HasForeignKey("StatusHistoryId");
-
                     b.Navigation("Borrowing");
                 });
 
             modelBuilder.Entity("_2026_ruangkita_backend.Models.Borrowing", b =>
-                {
-                    b.Navigation("StatusHistories");
-                });
-
-            modelBuilder.Entity("_2026_ruangkita_backend.Models.StatusHistory", b =>
                 {
                     b.Navigation("StatusHistories");
                 });
