@@ -18,7 +18,7 @@ public class BorrowingsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Borrowing>>> GetBorrowings(
-        [FromQuery] string? status, 
+        [FromQuery] string? status,
         [FromQuery] string? search)
     {
         var query = _context.Borrowings
@@ -47,10 +47,21 @@ public class BorrowingsController : ControllerBase
     {
         // Set status default
         borrowing.Status = "Pending";
-        
+
         // Penting: Putuskan relasi objek agar tidak terjadi error relasi database
-        borrowing.Room = null; 
-        
+        borrowing.Room = null;
+
+        var isConflict = await _context.Borrowings
+        .AnyAsync(b => b.RoomId == borrowing.RoomId &&
+                        b.Status == "Approved" && ((borrowing.BorrowDate >= b.BorrowDate && borrowing.BorrowDate < b.ReturnDate) ||
+                        (borrowing.ReturnDate > b.BorrowDate && borrowing.ReturnDate <= b.ReturnDate) ||
+                        (borrowing.BorrowDate <= b.BorrowDate && borrowing.ReturnDate >= b.ReturnDate)));
+
+        if (isConflict)
+        {
+            return BadRequest(new { message = "Jadwal bentrok! Ruangan sudah dipesan pada jam tersebut." });
+        }
+
         _context.Borrowings.Add(borrowing);
         await _context.SaveChangesAsync();
 
@@ -87,9 +98,12 @@ public class BorrowingsController : ControllerBase
         borrowing.Room = null; // Mencegah update objek Room yang tidak sengaja
         _context.Entry(borrowing).State = EntityState.Modified;
 
-        try {
+        try
+        {
             await _context.SaveChangesAsync();
-        } catch (DbUpdateConcurrencyException) {
+        }
+        catch (DbUpdateConcurrencyException)
+        {
             if (!_context.Borrowings.Any(e => e.Id == id)) return NotFound();
             else throw;
         }
