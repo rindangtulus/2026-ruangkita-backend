@@ -18,13 +18,21 @@ public class BorrowingsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Borrowing>>> GetBorrowings(
-        [FromQuery] string? status,
-        [FromQuery] string? search)
+    [FromQuery] string? status,
+    [FromQuery] string? search,
+    [FromQuery] int? userId,
+    [FromQuery] string? role)
     {
         var query = _context.Borrowings
             .Include(b => b.Room)
             .Include(b => b.StatusHistories)
             .AsQueryable();
+
+
+        if (role == "User" && userId.HasValue)
+        {
+            query = query.Where(b => b.UserId == userId.Value);
+        }
 
         if (!string.IsNullOrEmpty(status))
         {

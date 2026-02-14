@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using _2026_ruangkita_backend.Models;
 
 namespace _2026_ruangkita_backend.Data;
+
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -10,6 +11,8 @@ public class AppDbContext : DbContext
     public DbSet<Borrowing> Borrowings { get; set; }
 
     public DbSet<StatusHistory> StatusHistories { get; set; }
+
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
