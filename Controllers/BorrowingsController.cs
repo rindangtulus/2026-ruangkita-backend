@@ -16,6 +16,17 @@ public class BorrowingsController : ControllerBase
         _context = context;
     }
 
+    private async Task<bool> IsRoomBooked(int roomId, DateTime start, DateTime end, int? excludeId = null)
+    {
+        return await _context.Borrowings
+            .AnyAsync(b => b.RoomId == roomId &&
+                           b.Status == "Approved" &&
+                           b.Id != excludeId &&
+                           ((start >= b.BorrowDate && start < b.ReturnDate) ||
+                            (end > b.BorrowDate && end <= b.ReturnDate) ||
+                            (start <= b.BorrowDate && end >= b.ReturnDate)));
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Borrowing>>> GetBorrowings(
     [FromQuery] string? status,
@@ -53,10 +64,13 @@ public class BorrowingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Borrowing>> PostBorrowing(Borrowing borrowing)
     {
-        // Set status default
+        if (await IsRoomBooked(borrowing.RoomId, borrowing.BorrowDate, borrowing.ReturnDate))
+        {
+            return BadRequest(new { message = "Gagal! Ruangan sudah dipesan orang lain pada jam tersebut." });
+        }
+
         borrowing.Status = "Pending";
 
-        // Penting: Putuskan relasi objek agar tidak terjadi error relasi database
         borrowing.Room = null;
 
         var isConflict = await _context.Borrowings
@@ -73,7 +87,6 @@ public class BorrowingsController : ControllerBase
         _context.Borrowings.Add(borrowing);
         await _context.SaveChangesAsync();
 
-        // OTOMATIS: Buat history awal agar detail history di Frontend langsung ada isinya
         var history = new StatusHistory
         {
             BorrowingId = borrowing.Id,
@@ -103,7 +116,13 @@ public class BorrowingsController : ControllerBase
     {
         if (id != borrowing.Id) return BadRequest();
 
-        borrowing.Room = null; // Mencegah update objek Room yang tidak sengaja
+        if (await IsRoomBooked(borrowing.RoomId, borrowing.BorrowDate, borrowing.ReturnDate, id))
+        {
+            return BadRequest(new { message = "Perubahan gagal! Waktu baru bentrok dengan jadwal yang sudah ada." });
+        }
+
+        borrowing.Status = "Pending";
+
         _context.Entry(borrowing).State = EntityState.Modified;
 
         try
@@ -116,7 +135,11 @@ public class BorrowingsController : ControllerBase
             else throw;
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            message = "Perubahan disimpan! Status kembali ke Pending untuk ditinjau Admin.",
+            data = borrowing
+        });
     }
 
     [HttpPatch("{id}/status")]
