@@ -35,5 +35,26 @@ namespace _2026_ruangkita_backend.Controllers
                 fullName = user.FullName
             });
         }
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
+        {
+            if (await _context.Users.AnyAsync(u => u.Username == registerDto.Username))
+            {
+                return BadRequest(new { message = "Username sudah digunakan!" });
+            }
+
+            var user = new User
+            {
+                Username = registerDto.Username,
+                Password = registerDto.Password,
+                FullName = registerDto.FullName,
+                Role = "User"
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Registrasi berhasil! Silakan login." });
+        }
     }
 }
