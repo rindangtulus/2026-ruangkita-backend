@@ -26,4 +26,7 @@ public class Borrowing
     public Room? Room { get; set; }
 
     public List<StatusHistory> StatusHistories { get; set; } = new();
+
+    public int UserId { get; set; }
+    public User? User { get; set; }
 }
