@@ -56,5 +56,28 @@ namespace _2026_ruangkita_backend.Controllers
 
             return Ok(new { message = "Registrasi berhasil! Silakan login." });
         }
+        [HttpPut("update-profile/{id}")]
+        public async Task<IActionResult> UpdateProfile(int id, [FromBody] UpdateProfileDTO dto) // Pakai UpdateProfileDTO
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound(new { message = "User tidak ditemukan" });
+
+            user.FullName = dto.FullName;
+
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                user.Password = dto.Password;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                id = user.Id,
+                username = user.Username,
+                role = user.Role,
+                fullName = user.FullName
+            });
+        }
     }
 }

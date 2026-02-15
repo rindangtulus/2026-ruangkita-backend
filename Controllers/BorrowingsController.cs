@@ -137,38 +137,50 @@ public class BorrowingsController : ControllerBase
 
         return Ok(new
         {
-            message = "Perubahan disimpan! Status kembali ke Pending untuk ditinjau Admin.",
             data = borrowing
         });
     }
 
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusUpdateDto statusDto)
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusDTO dto)
     {
-        var borrowing = await _context.Borrowings.FindAsync(id);
-        if (borrowing == null) return NotFound();
-
-        // Catat ke history
-        var history = new StatusHistory
-        {
-            BorrowingId = id,
-            Status = statusDto.Status,
-            ChangedAt = DateTime.Now
-        };
-        _context.StatusHistories.Add(history);
-
-        borrowing.Status = statusDto.Status;
-        await _context.SaveChangesAsync();
-
-        // Return data lengkap beserta history barunya
-        var result = await _context.Borrowings
-            .Include(b => b.Room)
+        var borrowing = await _context.Borrowings
             .Include(b => b.StatusHistories)
             .FirstOrDefaultAsync(b => b.Id == id);
 
-        return Ok(result);
-    }
+        if (borrowing == null) return NotFound();
 
+        if (dto.Status == "Approved")
+        {
+            bool isBentrok = await _context.Borrowings.AnyAsync(b =>
+                b.RoomId == borrowing.RoomId &&
+                b.Status == "Approved" &&
+                b.Id != id &&
+                ((borrowing.BorrowDate >= b.BorrowDate && borrowing.BorrowDate < b.ReturnDate) ||
+                 (borrowing.ReturnDate > b.BorrowDate && borrowing.ReturnDate <= b.ReturnDate) ||
+                 (borrowing.BorrowDate <= b.BorrowDate && borrowing.ReturnDate >= b.ReturnDate)));
+
+            if (isBentrok)
+            {
+                return BadRequest(new { message = "Gagal Approve! Ruangan sudah digunakan oleh jadwal lain yang sudah disetujui." });
+            }
+        }
+
+        borrowing.Status = dto.Status;
+
+        var history = new StatusHistory
+        {
+            BorrowingId = id,
+            Status = dto.Status,
+            ChangedAt = DateTime.Now
+        };
+
+        _context.StatusHistories.Add(history);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(borrowing);
+    }
     public class StatusUpdateDto { public string Status { get; set; } = string.Empty; }
 
     [HttpDelete("{id}")]
