@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2026-ruangkita-backend", "2026-ruangkita-backend.csproj", "{D785BFFA-5550-C142-305D-7C4DBEA2D5CC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D785BFFA-5550-C142-305D-7C4DBEA2D5CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D785BFFA-5550-C142-305D-7C4DBEA2D5CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D785BFFA-5550-C142-305D-7C4DBEA2D5CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D785BFFA-5550-C142-305D-7C4DBEA2D5CC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9BBFE274-9302-4115-9BED-D030881D2E43}
+	EndGlobalSection
+EndGlobal
